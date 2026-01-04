@@ -5,8 +5,9 @@ A semantic CLI wrapper around ADB for LLMs to interact with Android devices.
 ## Quick Reference
 
 ```bash
-bun run src/index.ts <command>     # Run in development
-bun run typecheck                   # Type check
+npm run build                      # Build to dist/
+node dist/index.js <command>       # Run built CLI
+npm run typecheck                  # Type check
 ```
 
 ## Architecture
@@ -73,17 +74,20 @@ All commands that interact with devices go through `getDevice()` in `adb.ts`:
 Requires a running Android emulator or connected device:
 
 ```bash
+# Build first
+npm run build
+
 # Start emulator (if needed)
 emulator -avd Pixel_7 &
 
 # Test basic commands
-bun run src/index.ts devices
-bun run src/index.ts screenshot /tmp/test.png
-bun run src/index.ts list
-bun run src/index.ts tap "Chrome"
-bun run src/index.ts back
-bun run src/index.ts scroll down
-bun run src/index.ts swipe left
+node dist/index.js devices
+node dist/index.js screenshot /tmp/test.png
+node dist/index.js list
+node dist/index.js tap "Chrome"
+node dist/index.js back
+node dist/index.js scroll down
+node dist/index.js swipe left
 ```
 
 ## ADB Commands Reference

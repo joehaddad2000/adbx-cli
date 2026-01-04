@@ -2,9 +2,10 @@
  * Capture a screenshot from the device.
  */
 
+import { writeFile } from "fs/promises";
+import { resolve } from "path";
 import { execAdbRaw, type AdbOptions } from "../adb.ts";
 import { success } from "../utils/output.ts";
-import { resolve } from "path";
 
 export interface ScreenshotOptions extends AdbOptions {
   /** Output path for the screenshot. Defaults to ./screenshot.png */
@@ -20,7 +21,7 @@ export async function screenshotCommand(
   const imageData = await execAdbRaw(["exec-out", "screencap", "-p"], options);
 
   // Write to file
-  await Bun.write(outputPath, imageData);
+  await writeFile(outputPath, imageData);
 
   success(`Screenshot saved to ${outputPath}`);
   return outputPath;

@@ -5,7 +5,7 @@
  * with proper error handling and device targeting.
  */
 
-import { $ } from "bun";
+import { execa, ExecaError } from "execa";
 
 // ============================================================================
 // Error Types
@@ -134,19 +134,29 @@ export async function execAdb(
 
   try {
     const result = await withTimeout(
-      $`adb ${fullArgs}`.quiet(),
+      execa("adb", fullArgs, { reject: false }),
       timeout,
       command
     );
 
+    const exitCode = result.exitCode ?? 0;
+    if (exitCode !== 0) {
+      throw new AdbError(
+        `ADB command failed: ${command}`,
+        command,
+        exitCode,
+        result.stderr
+      );
+    }
+
     return {
-      stdout: result.stdout.toString().trim(),
-      stderr: result.stderr.toString().trim(),
-      exitCode: result.exitCode,
+      stdout: result.stdout.trim(),
+      stderr: result.stderr.trim(),
+      exitCode,
     };
   } catch (error) {
     // Handle command not found
-    if (error instanceof Error && error.message.includes("not found")) {
+    if (error instanceof Error && error.message.includes("ENOENT")) {
       throw new AdbNotFoundError();
     }
 
@@ -155,18 +165,13 @@ export async function execAdb(
       throw error;
     }
 
-    // Handle Bun shell errors
-    if (error && typeof error === "object" && "exitCode" in error) {
-      const shellError = error as {
-        exitCode: number;
-        stdout: Buffer;
-        stderr: Buffer;
-      };
+    // Handle execa errors
+    if (error instanceof ExecaError) {
       throw new AdbError(
         `ADB command failed: ${command}`,
         command,
-        shellError.exitCode,
-        shellError.stderr?.toString().trim() ?? ""
+        error.exitCode ?? 1,
+        error.stderr ?? ""
       );
     }
 
@@ -191,7 +196,7 @@ export async function execShell(
 export async function execAdbRaw(
   args: string[],
   options: AdbOptions = {}
-): Promise<Buffer> {
+): Promise<Uint8Array> {
   const { device, timeout = 30000 } = options;
 
   const fullArgs = device ? ["-s", device, ...args] : args;
@@ -199,14 +204,14 @@ export async function execAdbRaw(
 
   try {
     const result = await withTimeout(
-      $`adb ${fullArgs}`.quiet(),
+      execa({ reject: false, encoding: "buffer" })`adb ${fullArgs}`,
       timeout,
       command
     );
 
-    return Buffer.from(result.stdout);
+    return result.stdout;
   } catch (error) {
-    if (error instanceof Error && error.message.includes("not found")) {
+    if (error instanceof Error && error.message.includes("ENOENT")) {
       throw new AdbNotFoundError();
     }
     if (error instanceof AdbError) {

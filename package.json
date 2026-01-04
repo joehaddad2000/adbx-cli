@@ -1,18 +1,19 @@
 {
   "name": "adbx",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "A semantic CLI wrapper around ADB designed for LLMs to interact with Android devices",
-  "module": "src/index.ts",
   "type": "module",
   "bin": {
-    "adbx": "src/index.ts"
+    "adbx": "dist/index.js"
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "typecheck": "tsc --noEmit"
+    "build": "tsup",
+    "typecheck": "tsc --noEmit",
+    "prepublishOnly": "npm run build"
   },
   "files": [
-    "src"
+    "dist"
   ],
   "repository": {
     "type": "git",
@@ -32,9 +33,11 @@
   },
   "homepage": "https://github.com/joehaddad2000/adbx-cli#readme",
   "devDependencies": {
-    "@types/bun": "latest"
-  },
-  "peerDependencies": {
+    "@types/node": "^22",
+    "tsup": "^8.5.1",
     "typescript": "^5"
+  },
+  "dependencies": {
+    "execa": "^9.6.1"
   }
 }

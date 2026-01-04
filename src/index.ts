@@ -1,4 +1,3 @@
-#!/usr/bin/env bun
 /**
  * adbx — A semantic CLI wrapper around ADB for LLMs.
  *
@@ -93,7 +92,7 @@ interface ParsedArgs {
 
 function parseArguments(): ParsedArgs {
   const { values, positionals } = parseArgs({
-    args: Bun.argv.slice(2),
+    args: process.argv.slice(2),
     options: {
       device: { type: "string", short: "d" },
       timeout: { type: "string", short: "t" },

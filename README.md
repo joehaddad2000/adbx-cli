@@ -27,23 +27,22 @@ adbx tap "Submit"
 
 ### Prerequisites
 
-- [Bun](https://bun.sh) runtime
+- [Node.js](https://nodejs.org) 18+
 - Android SDK Platform Tools (`adb` in PATH)
 - A connected Android device or running emulator
 
-### Install via npm/bun
+### Install globally
 
 ```bash
-bun add -g adbx
-# or
 npm install -g adbx
+# or: pnpm add -g adbx
+# or: yarn global add adbx
+# or: bun add -g adbx
 ```
 
 ### Run without installing
 
 ```bash
-bunx adbx <command>
-# or
 npx adbx <command>
 ```
 
