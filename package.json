@@ -9,9 +9,28 @@
   },
   "scripts": {
     "dev": "bun run src/index.ts",
-    "build": "bun build src/index.ts --compile --outfile adbx",
     "typecheck": "tsc --noEmit"
   },
+  "files": [
+    "src"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/joehaddad2000/adbx-cli.git"
+  },
+  "keywords": [
+    "adb",
+    "android",
+    "cli",
+    "automation",
+    "llm"
+  ],
+  "author": "Joe Haddad",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/joehaddad2000/adbx-cli/issues"
+  },
+  "homepage": "https://github.com/joehaddad2000/adbx-cli#readme",
   "devDependencies": {
     "@types/bun": "latest"
   },

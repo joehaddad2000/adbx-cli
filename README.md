@@ -27,21 +27,20 @@ adbx tap "Submit"
 - Android SDK Platform Tools (`adb` in PATH)
 - A connected Android device or running emulator
 
-### Build from source
+### Install via npm/bun
 
 ```bash
-git clone https://github.com/user/adbx.git
-cd adbx
-bun install
-bun run build
+bun add -g adbx
+# or
+npm install -g adbx
 ```
 
-This produces a standalone `adbx` binary (~50MB) that can be placed anywhere in your PATH.
-
-### Development
+### Run without installing
 
 ```bash
-bun run src/index.ts <command>
+bunx adbx <command>
+# or
+npx adbx <command>
 ```
 
 ## Usage
