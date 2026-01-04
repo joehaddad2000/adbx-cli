@@ -18,8 +18,10 @@
  *   home                 Press home button
  *   enter                Press enter key
  *   list                 List visible UI elements
+ *   packages [query]     List/search installed packages
  *   launch <package>     Launch app
  *   stop <package>       Force stop app
+ *   clear-data <package> Clear app data
  *
  * Global Options:
  *   --device <serial>    Target specific device
@@ -43,7 +45,8 @@ import { scrollCommand, swipeCommand, isValidScrollDirection, isValidSwipeDirect
 import { waitCommand, waitGoneCommand } from "./commands/wait.ts";
 import { backCommand, homeCommand, enterCommand } from "./commands/keys.ts";
 import { listCommand } from "./commands/list.ts";
-import { launchCommand, stopCommand } from "./commands/app.ts";
+import { launchCommand, stopCommand, clearDataCommand } from "./commands/app.ts";
+import { packagesCommand } from "./commands/packages.ts";
 
 // ============================================================================
 // Argument Parsing
@@ -70,8 +73,10 @@ Commands:
   home                 Press home button
   enter                Press enter key
   list                 List visible UI elements
+  packages [query]     List/search installed packages
   launch <package>     Launch app by package name
   stop <package>       Force stop app
+  clear-data <package> Clear app data (cache, settings, databases)
 
 Options:
   --device <serial>    Target specific device
@@ -79,6 +84,7 @@ Options:
   --long               Perform long press (tap only)
   --index <n>          Select nth match (tap only)
   --id                 Search by resource-id (tap only)
+  --all, -a            Include system packages (packages only)
   --help, -h           Show this help message`);
 }
 
@@ -90,6 +96,7 @@ interface ParsedArgs {
   long?: boolean;
   index?: number;
   id?: boolean;
+  all?: boolean;
   help?: boolean;
 }
 
@@ -102,6 +109,7 @@ function parseArguments(): ParsedArgs {
       long: { type: "boolean", short: "l" },
       index: { type: "string", short: "i" },
       id: { type: "boolean" },
+      all: { type: "boolean", short: "a" },
       help: { type: "boolean", short: "h" },
     },
     allowPositionals: true,
@@ -118,6 +126,7 @@ function parseArguments(): ParsedArgs {
     long: values.long,
     index: values.index ? parseInt(values.index, 10) : undefined,
     id: values.id,
+    all: values.all,
     help: values.help,
   };
 }
@@ -127,7 +136,7 @@ function parseArguments(): ParsedArgs {
 // ============================================================================
 
 async function runCommand(args: ParsedArgs): Promise<void> {
-  const { command, positionals, device: explicitDevice, timeout, long, index, id } = args;
+  const { command, positionals, device: explicitDevice, timeout, long, index, id, all } = args;
 
   // For commands that need a device, resolve it once
   const needsDevice = !["devices", "help"].includes(command);
@@ -232,6 +241,12 @@ async function runCommand(args: ParsedArgs): Promise<void> {
       await listCommand(options);
       break;
 
+    case "packages": {
+      const query = positionals[0];
+      await packagesCommand(query, { ...options, all });
+      break;
+    }
+
     case "launch": {
       if (positionals.length === 0) {
         throw new Error("launch requires package name");
@@ -245,6 +260,14 @@ async function runCommand(args: ParsedArgs): Promise<void> {
         throw new Error("stop requires package name");
       }
       await stopCommand(positionals[0]!, options);
+      break;
+    }
+
+    case "clear-data": {
+      if (positionals.length === 0) {
+        throw new Error("clear-data requires package name");
+      }
+      await clearDataCommand(positionals[0]!, options);
       break;
     }
 

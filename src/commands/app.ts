@@ -48,3 +48,18 @@ export async function stopCommand(
   await execShell(`am force-stop ${packageName}`, options);
   success(`Stopped ${packageName}`);
 }
+
+// ============================================================================
+// Clear Data
+// ============================================================================
+
+/**
+ * Clear app data (cache, settings, databases) by package name.
+ */
+export async function clearDataCommand(
+  packageName: string,
+  options: AdbOptions = {}
+): Promise<void> {
+  await execShell(`pm clear ${packageName}`, options);
+  success(`Cleared data for ${packageName}`);
+}

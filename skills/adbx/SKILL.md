@@ -83,10 +83,21 @@ Tags indicate how to tap each element:
 - `[icon]` = has `content-desc`, tap with `adbx tap "Next month"`
 - `[id]` = only has `resource-id`, tap with `adbx tap "com.app:id/btn_submit" --id`
 
+### Package Discovery
+```bash
+adbx packages                   # List user-installed apps
+adbx packages goal              # Search apps containing "goal"
+adbx packages --all             # Include system packages
+adbx packages android --all     # Search all packages
+```
+
+**Important:** Always search for package names first—don't guess! Package names are often different from app names.
+
 ### App Control
 ```bash
 adbx launch com.example.app     # Launch app
 adbx stop com.example.app       # Force stop app
+adbx clear-data com.example.app # Clear app data (reset to fresh install)
 ```
 
 ## Element Types
@@ -122,6 +133,7 @@ Android UI elements can be identified by different attributes:
 | `--long` | Long press (tap only) |
 | `--index <n>` | Select nth match when multiple found (tap only) |
 | `--id` | Search by resource-id instead of text/content-desc (tap only) |
+| `--all` | Include system packages (packages only) |
 
 ## Error Handling
 
@@ -205,10 +217,18 @@ adbx devices
 adbx tap "Submit" --device emulator-5554
 ```
 
+### Reset App to Fresh State
+```bash
+adbx packages goal              # Find the package name first
+adbx clear-data com.goals.app   # Clear all app data
+adbx launch com.goals.app       # Relaunch (will show onboarding)
+```
+
 ## Best Practices
 
 1. **Always `wait` after navigation** - screens take time to load
 2. **Use `list` to discover elements** - don't guess element text
-3. **Take screenshots for debugging** - see what's actually on screen
-4. **Use `--index` for lists** - when multiple elements have similar text
-5. **Use `wait-gone` for loading states** - wait for spinners to disappear before interacting
+3. **Use `packages` to find package names** - don't guess, search first (e.g., `adbx packages goal`)
+4. **Take screenshots for debugging** - see what's actually on screen
+5. **Use `--index` for lists** - when multiple elements have similar text
+6. **Use `wait-gone` for loading states** - wait for spinners to disappear before interacting

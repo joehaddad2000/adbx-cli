@@ -86,8 +86,12 @@ adbx wait "Welcome"             # Wait for element to appear
 adbx wait-gone "Loading..."     # Wait for element to disappear
 
 adbx list                       # List visible UI elements
+adbx packages                   # List user-installed apps
+adbx packages goal              # Search by name
+adbx packages --all             # Include system packages
 adbx launch com.example.app     # Launch app
 adbx stop com.example.app       # Force stop app
+adbx clear-data com.example.app # Clear app data
 ```
 
 ### Options
@@ -162,8 +166,10 @@ If only one device is connected, it's selected automatically.
 | `home` | Press home button |
 | `enter` | Press enter/return key |
 | `list` | List all visible UI elements with coordinates |
+| `packages [query]` | List/search installed packages |
 | `launch <package>` | Launch app by package name |
 | `stop <package>` | Force stop app |
+| `clear-data <package>` | Clear app data (cache, settings, databases) |
 
 ## Error Handling
 
