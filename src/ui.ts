@@ -175,6 +175,21 @@ export function findElementsByText(
 }
 
 /**
+ * Find elements matching a resource-id.
+ * Matches if resource-id contains the query (case-insensitive).
+ */
+export function findElementsById(
+  elements: UiElement[],
+  query: string
+): UiElement[] {
+  const lowerQuery = query.toLowerCase();
+
+  return elements.filter((el) => {
+    return el.resourceId.toLowerCase().includes(lowerQuery);
+  });
+}
+
+/**
  * Get all visible text labels from elements (for error messages).
  */
 export function getVisibleTexts(elements: UiElement[]): string[] {
@@ -199,10 +214,12 @@ export function getVisibleTexts(elements: UiElement[]): string[] {
 export interface FindElementOptions extends AdbOptions {
   /** Which match to return when multiple elements found (0-indexed). */
   index?: number;
+  /** Search by resource-id instead of text/content-desc. */
+  id?: boolean;
 }
 
 /**
- * Find an element by text and return its center coordinates.
+ * Find an element by text (or resource-id if `id` option set) and return its center coordinates.
  * Throws if element not found or multiple matches without index.
  */
 export async function findElement(
@@ -211,7 +228,9 @@ export async function findElement(
 ): Promise<{ x: number; y: number; element: UiElement }> {
   const xml = await dumpUiHierarchy(options);
   const elements = parseElements(xml);
-  const matches = findElementsByText(elements, query);
+  const matches = options.id
+    ? findElementsById(elements, query)
+    : findElementsByText(elements, query);
 
   if (matches.length === 0) {
     throw new ElementNotFoundError(query, getVisibleTexts(elements));

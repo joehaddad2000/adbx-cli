@@ -12,22 +12,49 @@ import type { AdbOptions } from "../adb.ts";
 
 /**
  * Format a single element for display.
+ * Shows [icon] for content-desc elements, [id] for resource-id only elements.
  */
 function formatElement(el: UiElement): string {
-  const label = el.text || el.contentDesc || el.resourceId || el.className;
-  const { x, y } = boundsCenter(el.bounds);
-  const clickable = el.clickable ? " [clickable]" : "";
+  // Determine label and source type
+  let label: string;
+  let labelType: "text" | "icon" | "id" = "text";
 
-  return `  "${label}" at (${x}, ${y})${clickable}`;
+  if (el.text) {
+    label = el.text;
+    labelType = "text";
+  } else if (el.contentDesc) {
+    label = el.contentDesc;
+    labelType = "icon";
+  } else {
+    label = el.resourceId || el.className;
+    labelType = "id";
+  }
+
+  const { x, y } = boundsCenter(el.bounds);
+
+  // Build tags array
+  const tags: string[] = [];
+  if (labelType === "icon") {
+    tags.push("icon");
+  } else if (labelType === "id") {
+    tags.push("id");
+  }
+  if (el.clickable) {
+    tags.push("clickable");
+  }
+
+  const tagStr = tags.length > 0 ? ` [${tags.join(", ")}]` : "";
+
+  return `  "${label}" at (${x}, ${y})${tagStr}`;
 }
 
 /**
- * Filter elements that have meaningful display text.
+ * Filter elements that have meaningful identifiers.
  */
 function filterDisplayableElements(elements: UiElement[]): UiElement[] {
   return elements.filter((el) => {
-    // Must have some identifying text
-    const hasLabel = el.text || el.contentDesc;
+    // Must have some identifying label (text, content-desc, or resource-id)
+    const hasLabel = el.text || el.contentDesc || el.resourceId;
     // Skip tiny elements (likely not interactive)
     const hasSize =
       el.bounds.x2 - el.bounds.x1 > 10 && el.bounds.y2 - el.bounds.y1 > 10;

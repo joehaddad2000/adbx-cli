@@ -40,9 +40,9 @@ async function tapAtCoordinates(
 // ============================================================================
 
 /**
- * Tap on an element by text.
+ * Tap on an element by text or resource-id.
  */
-export async function tapByText(
+export async function tapByQuery(
   query: string,
   options: TapOptions = {}
 ): Promise<void> {
@@ -51,7 +51,8 @@ export async function tapByText(
   await tapAtCoordinates(x, y, options);
 
   const action = options.long ? "Long pressed" : "Tapped";
-  success(`${action} "${query}" at ${formatCoords(x, y)}`);
+  const queryDisplay = options.id ? `[${query}]` : `"${query}"`;
+  success(`${action} ${queryDisplay} at ${formatCoords(x, y)}`);
 }
 
 /**
@@ -70,7 +71,7 @@ export async function tapByCoordinates(
 
 /**
  * Main tap command entry point.
- * Determines whether to tap by text or coordinates based on arguments.
+ * Determines whether to tap by text/id or coordinates based on arguments.
  */
 export async function tapCommand(
   target: string | [number, number],
@@ -80,6 +81,6 @@ export async function tapCommand(
     const [x, y] = target;
     await tapByCoordinates(x, y, options);
   } else {
-    await tapByText(target, options);
+    await tapByQuery(target, options);
   }
 }

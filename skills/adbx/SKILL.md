@@ -24,13 +24,14 @@ adbx screenshot ./path/to.png   # Save to specific path
 
 ### Tapping
 ```bash
-adbx tap "Sign In"              # Tap element by text
+adbx tap "Sign In"              # Tap element by text or content-desc
 adbx tap 540 1200               # Tap coordinates
 adbx tap "Menu" --long          # Long press
 adbx tap "Item" --index 2       # Tap 3rd match (0-indexed)
+adbx tap "android:id/next" --id # Tap by resource-id
 ```
 
-Tap finds elements by matching their `text` or `content-desc` attribute (case-insensitive substring match).
+Tap finds elements by matching their `text` or `content-desc` attribute (case-insensitive substring match). Use `--id` to search by `resource-id` instead.
 
 ### Text Input
 ```bash
@@ -69,17 +70,48 @@ adbx list                       # List all visible UI elements with coordinates
 
 Output example:
 ```
-Found 3 elements:
+Found 5 elements:
   "Sign In" at (540, 1200) [clickable]
   "Email" at (540, 800) [clickable]
+  "Next month" at (819, 921) [icon, clickable]
+  "com.app:id/btn_submit" at (540, 1400) [id, clickable]
   "Welcome" at (540, 400)
 ```
+
+Tags indicate how to tap each element:
+- No tag = has `text` attribute, tap with `adbx tap "Sign In"`
+- `[icon]` = has `content-desc`, tap with `adbx tap "Next month"`
+- `[id]` = only has `resource-id`, tap with `adbx tap "com.app:id/btn_submit" --id`
 
 ### App Control
 ```bash
 adbx launch com.example.app     # Launch app
 adbx stop com.example.app       # Force stop app
 ```
+
+## Element Types
+
+Android UI elements can be identified by different attributes:
+
+| Attribute | What it is | Example |
+|-----------|-----------|---------|
+| `text` | Visible text on buttons, labels | "Sign In", "Submit" |
+| `content-desc` | Accessibility label for icons/images | "Next month", "Close" |
+| `resource-id` | Developer-assigned ID | `android:id/next` |
+
+**How adbx finds elements:**
+- `adbx tap "Sign In"` → searches `text` and `content-desc`
+- `adbx tap "android:id/next" --id` → searches `resource-id`
+
+**Common patterns:**
+| You see | What to tap | Why |
+|---------|-------------|-----|
+| "Sign In" button | `adbx tap "Sign In"` | Has `text="Sign In"` |
+| ">" arrow icon | `adbx tap "Next month"` | Has `content-desc="Next month"` |
+| "×" close icon | `adbx tap "Close"` | Has `content-desc="Close"` |
+| Unlabeled button | `adbx tap "btn_submit" --id` | Has `resource-id` only |
+
+**Tip:** Icons and images don't have text—they have accessibility labels (`content-desc`). Use `adbx list` to discover what's available. Elements marked `[icon]` in the output are `content-desc` values.
 
 ## Options
 
@@ -89,6 +121,7 @@ adbx stop com.example.app       # Force stop app
 | `--timeout <ms>` | Timeout for wait commands (default: 10000) |
 | `--long` | Long press (tap only) |
 | `--index <n>` | Select nth match when multiple found (tap only) |
+| `--id` | Search by resource-id instead of text/content-desc (tap only) |
 
 ## Error Handling
 

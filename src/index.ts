@@ -26,6 +26,7 @@
  *   --timeout <ms>       Override timeout (default: 10000)
  *   --long               For tap: perform long press
  *   --index <n>          For tap: select nth match
+ *   --id                 For tap: search by resource-id
  */
 
 import { parseArgs } from "util";
@@ -77,6 +78,7 @@ Options:
   --timeout <ms>       Override timeout (default: 10000)
   --long               Perform long press (tap only)
   --index <n>          Select nth match (tap only)
+  --id                 Search by resource-id (tap only)
   --help, -h           Show this help message`);
 }
 
@@ -87,6 +89,7 @@ interface ParsedArgs {
   timeout?: number;
   long?: boolean;
   index?: number;
+  id?: boolean;
   help?: boolean;
 }
 
@@ -98,6 +101,7 @@ function parseArguments(): ParsedArgs {
       timeout: { type: "string", short: "t" },
       long: { type: "boolean", short: "l" },
       index: { type: "string", short: "i" },
+      id: { type: "boolean" },
       help: { type: "boolean", short: "h" },
     },
     allowPositionals: true,
@@ -113,6 +117,7 @@ function parseArguments(): ParsedArgs {
     timeout: values.timeout ? parseInt(values.timeout, 10) : undefined,
     long: values.long,
     index: values.index ? parseInt(values.index, 10) : undefined,
+    id: values.id,
     help: values.help,
   };
 }
@@ -122,7 +127,7 @@ function parseArguments(): ParsedArgs {
 // ============================================================================
 
 async function runCommand(args: ParsedArgs): Promise<void> {
-  const { command, positionals, device: explicitDevice, timeout, long, index } = args;
+  const { command, positionals, device: explicitDevice, timeout, long, index, id } = args;
 
   // For commands that need a device, resolve it once
   const needsDevice = !["devices", "help"].includes(command);
@@ -146,8 +151,8 @@ async function runCommand(args: ParsedArgs): Promise<void> {
         throw new Error("tap requires a target (text or coordinates)");
       }
 
-      // Check if coordinates (two numbers)
-      if (positionals.length >= 2) {
+      // Check if coordinates (two numbers) - only when not using --id
+      if (!id && positionals.length >= 2) {
         const x = parseInt(positionals[0]!, 10);
         const y = parseInt(positionals[1]!, 10);
         if (!isNaN(x) && !isNaN(y)) {
@@ -156,9 +161,9 @@ async function runCommand(args: ParsedArgs): Promise<void> {
         }
       }
 
-      // Otherwise, treat as text
+      // Otherwise, treat as text/id query
       const target = positionals.join(" ");
-      await tapCommand(target, { ...options, long, index });
+      await tapCommand(target, { ...options, long, index, id });
       break;
     }
 

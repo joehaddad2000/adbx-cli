@@ -68,6 +68,7 @@ adbx tap "Sign In"              # Tap element containing text
 adbx tap 540 1200               # Tap at coordinates
 adbx tap "Menu" --long          # Long press
 adbx tap "Item" --index 2       # Tap the 3rd match (0-indexed)
+adbx tap "android:id/next" --id # Tap by resource-id
 
 adbx type "hello@example.com"   # Type into focused field
 adbx clear                      # Clear focused field
@@ -96,6 +97,7 @@ adbx stop com.example.app       # Force stop app
 --timeout <ms>       # Override timeout for wait commands (default: 10000)
 --long               # Long press (tap only)
 --index <n>          # Select nth match when multiple elements found (tap only)
+--id                 # Search by resource-id instead of text (tap only)
 ```
 
 ### Example Workflow
