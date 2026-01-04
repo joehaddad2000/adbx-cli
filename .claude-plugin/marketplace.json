@@ -1,0 +1,14 @@
+{
+  "name": "adbx-cli",
+  "owner": {
+    "name": "Joe Haddad"
+  },
+  "plugins": [
+    {
+      "name": "adbx",
+      "source": ".",
+      "description": "Teaches Claude how to use adbx for Android device automation",
+      "version": "1.0.0"
+    }
+  ]
+}

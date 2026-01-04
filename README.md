@@ -46,6 +46,15 @@ npm install -g adbx
 npx adbx <command>
 ```
 
+### Claude Code Integration
+
+Add the adbx skill to Claude Code so it automatically uses adbx for Android automation:
+
+```
+/plugin marketplace add joehaddad2000/adbx-cli
+/plugin install adbx
+```
+
 ## Usage
 
 ### Basic Commands
