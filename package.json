@@ -1,6 +1,6 @@
 {
   "name": "adbx",
-  "version": "0.2.5",
+  "version": "0.2.6",
   "description": "A semantic CLI wrapper around ADB designed for LLMs to interact with Android devices",
   "type": "module",
   "bin": {

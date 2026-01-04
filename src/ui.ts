@@ -159,7 +159,7 @@ export function parseElements(xml: string): UiElement[] {
 
 /**
  * Find elements matching a text query.
- * Matches against both `text` and `content-desc` attributes.
+ * Matches against both `text` and `content-desc` attributes (case-insensitive exact match).
  */
 export function findElementsByText(
   elements: UiElement[],
@@ -168,8 +168,8 @@ export function findElementsByText(
   const lowerQuery = query.toLowerCase();
 
   return elements.filter((el) => {
-    const textMatch = el.text.toLowerCase().includes(lowerQuery);
-    const descMatch = el.contentDesc.toLowerCase().includes(lowerQuery);
+    const textMatch = el.text.toLowerCase() === lowerQuery;
+    const descMatch = el.contentDesc.toLowerCase() === lowerQuery;
     return textMatch || descMatch;
   });
 }
