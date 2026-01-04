@@ -40,7 +40,7 @@ function formatElement(el: UiElement): string {
     tags.push("id");
   }
   if (el.clickable) {
-    tags.push("clickable");
+    tags.push(el.enabled ? "enabled" : "disabled");
   }
 
   const tagStr = tags.length > 0 ? ` [${tags.join(", ")}]` : "";
