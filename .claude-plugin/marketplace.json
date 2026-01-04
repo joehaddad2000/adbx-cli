@@ -6,7 +6,7 @@
   "plugins": [
     {
       "name": "adbx",
-      "source": ".",
+      "source": "./",
       "description": "Teaches Claude how to use adbx for Android device automation",
       "version": "1.0.0"
     }
