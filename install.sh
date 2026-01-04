@@ -73,7 +73,7 @@ install() {
 
     info "Downloading from ${download_url}..."
 
-    if ! curl -fsSL "$download_url" -o "${INSTALL_DIR}/${BINARY_NAME}"; then
+    if ! curl -fL# "$download_url" -o "${INSTALL_DIR}/${BINARY_NAME}"; then
         error "Failed to download binary"
     fi
 
