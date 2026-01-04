@@ -1,0 +1,21 @@
+{
+  "name": "adbx",
+  "version": "0.1.0",
+  "description": "A semantic CLI wrapper around ADB designed for LLMs to interact with Android devices",
+  "module": "src/index.ts",
+  "type": "module",
+  "bin": {
+    "adbx": "src/index.ts"
+  },
+  "scripts": {
+    "dev": "bun run src/index.ts",
+    "build": "bun build src/index.ts --compile --outfile adbx",
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  }
+}
