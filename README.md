@@ -1,5 +1,9 @@
 # adbx
 
+[![npm version](https://img.shields.io/npm/v/adbx.svg)](https://www.npmjs.com/package/adbx)
+[![npm downloads](https://img.shields.io/npm/dm/adbx.svg)](https://www.npmjs.com/package/adbx)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A semantic CLI wrapper around ADB designed for LLMs to interact with Android devices.
 
 ## Why
@@ -169,12 +173,6 @@ Visible elements:
 $ adbx scroll left
 ✗ scroll requires direction: up or down
 ```
-
-## Requirements
-
-- macOS (other platforms untested)
-- Android SDK Platform Tools
-- Bun 1.0+ (for development/building)
 
 ## License
 

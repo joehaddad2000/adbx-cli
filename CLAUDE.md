@@ -6,7 +6,6 @@ A semantic CLI wrapper around ADB for LLMs to interact with Android devices.
 
 ```bash
 bun run src/index.ts <command>     # Run in development
-bun run build                       # Build standalone binary
 bun run typecheck                   # Type check
 ```
 
