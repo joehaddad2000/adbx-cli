@@ -1,7 +1,7 @@
 {
   "name": "adbx",
   "description": "Teaches Claude how to use adbx, a semantic CLI wrapper around ADB for Android automation",
-  "version": "0.3.0",
+  "version": "1.1.0",
   "author": {
     "name": "Joe Haddad"
   }
