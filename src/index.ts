@@ -6,18 +6,16 @@
  *
  * Commands:
  *   devices              List connected devices
- *   screenshot [path]    Capture screenshot
+ *   observe [path]       Get screen state (elements + optional screenshot)
  *   tap <target>         Tap element by text or coordinates
  *   type <text>          Type text into focused field
  *   clear                Clear focused text field
  *   scroll <direction>   Scroll up/down
  *   swipe <direction>    Swipe left/right
- *   wait <text>          Wait for element to appear
- *   wait-gone <text>     Wait for element to disappear
+ *   wait <ms>            Wait (sleep) for specified milliseconds
  *   back                 Press back button
  *   home                 Press home button
  *   enter                Press enter key
- *   list                 List visible UI elements
  *   packages [query]     List/search installed packages
  *   launch <package>     Launch app
  *   stop <package>       Force stop app
@@ -29,22 +27,30 @@
  *   --long               For tap: perform long press
  *   --index <n>          For tap: select nth match
  *   --id                 For tap: search by resource-id
+ *   --visual, -v         Include screenshot (observe only)
+ *   --wait <ms>          Wait before observing (observe only)
  */
 
 import { parseArgs } from "util";
+import { createRequire } from "module";
+import updateNotifier from "update-notifier";
 import { getDevice, AdbError, AdbNotFoundError, NoDevicesError, MultipleDevicesError, DeviceNotFoundError } from "./adb.ts";
 import { ElementNotFoundError, MultipleElementsError } from "./ui.ts";
 import { error, info } from "./utils/output.ts";
 
+// Check for updates (runs in background, notifies on next run)
+const require = createRequire(import.meta.url);
+const pkg = require("../package.json") as { name: string; version: string };
+updateNotifier({ pkg, updateCheckInterval: 1000 * 60 * 60 * 24 }).notify();
+
 // Commands
 import { devicesCommand } from "./commands/devices.ts";
-import { screenshotCommand } from "./commands/screenshot.ts";
 import { tapCommand } from "./commands/tap.ts";
 import { typeCommand, clearCommand } from "./commands/type.ts";
 import { scrollCommand, swipeCommand, isValidScrollDirection, isValidSwipeDirection } from "./commands/swipe.ts";
-import { waitCommand, waitGoneCommand } from "./commands/wait.ts";
+import { waitCommand } from "./commands/wait.ts";
 import { backCommand, homeCommand, enterCommand } from "./commands/keys.ts";
-import { listCommand } from "./commands/list.ts";
+import { observeCommand } from "./commands/observe.ts";
 import { launchCommand, stopCommand, clearDataCommand } from "./commands/app.ts";
 import { packagesCommand } from "./commands/packages.ts";
 
@@ -60,19 +66,17 @@ Usage:
 
 Commands:
   devices              List connected devices
-  screenshot [path]    Capture screenshot (default: ./screenshot.png)
+  observe [path]       Get screen state (elements + optional screenshot)
   tap <text>           Tap element by text
   tap <x> <y>          Tap at coordinates
   type <text>          Type text into focused field
   clear                Clear focused text field
   scroll <direction>   Scroll up/down (vertical)
   swipe <direction>    Swipe left/right (horizontal)
-  wait <text>          Wait for element to appear
-  wait-gone <text>     Wait for element to disappear
+  wait <ms>            Wait (sleep) for specified milliseconds
   back                 Press back button
   home                 Press home button
   enter                Press enter key
-  list                 List visible UI elements
   packages [query]     List/search installed packages
   launch <package>     Launch app by package name
   stop <package>       Force stop app
@@ -85,6 +89,8 @@ Options:
   --index <n>          Select nth match (tap only)
   --id                 Search by resource-id (tap only)
   --all, -a            Include system packages (packages only)
+  --visual, -v         Include screenshot (observe only)
+  --wait <ms>          Wait before observing (observe only)
   --help, -h           Show this help message`);
 }
 
@@ -97,6 +103,8 @@ interface ParsedArgs {
   index?: number;
   id?: boolean;
   all?: boolean;
+  visual?: boolean;
+  wait?: number;
   help?: boolean;
 }
 
@@ -110,6 +118,8 @@ function parseArguments(): ParsedArgs {
       index: { type: "string", short: "i" },
       id: { type: "boolean" },
       all: { type: "boolean", short: "a" },
+      visual: { type: "boolean", short: "v" },
+      wait: { type: "string", short: "w" },
       help: { type: "boolean", short: "h" },
     },
     allowPositionals: true,
@@ -127,6 +137,8 @@ function parseArguments(): ParsedArgs {
     index: values.index ? parseInt(values.index, 10) : undefined,
     id: values.id,
     all: values.all,
+    visual: values.visual,
+    wait: values.wait ? parseInt(values.wait, 10) : undefined,
     help: values.help,
   };
 }
@@ -136,10 +148,10 @@ function parseArguments(): ParsedArgs {
 // ============================================================================
 
 async function runCommand(args: ParsedArgs): Promise<void> {
-  const { command, positionals, device: explicitDevice, timeout, long, index, id, all } = args;
+  const { command, positionals, device: explicitDevice, timeout, long, index, id, all, visual, wait } = args;
 
   // For commands that need a device, resolve it once
-  const needsDevice = !["devices", "help"].includes(command);
+  const needsDevice = !["devices", "help", "wait"].includes(command);
   const device = needsDevice ? await getDevice(explicitDevice) : undefined;
 
   const options = { device, timeout };
@@ -148,12 +160,6 @@ async function runCommand(args: ParsedArgs): Promise<void> {
     case "devices":
       await devicesCommand();
       break;
-
-    case "screenshot": {
-      const path = positionals[0];
-      await screenshotCommand({ ...options, path });
-      break;
-    }
 
     case "tap": {
       if (positionals.length === 0) {
@@ -208,20 +214,11 @@ async function runCommand(args: ParsedArgs): Promise<void> {
     }
 
     case "wait": {
-      if (positionals.length === 0) {
-        throw new Error("wait requires text argument");
+      const ms = positionals[0] ? parseInt(positionals[0], 10) : 0;
+      if (isNaN(ms) || ms < 0) {
+        throw new Error("wait requires a valid number of milliseconds");
       }
-      const text = positionals.join(" ");
-      await waitCommand(text, { ...options, timeout });
-      break;
-    }
-
-    case "wait-gone": {
-      if (positionals.length === 0) {
-        throw new Error("wait-gone requires text argument");
-      }
-      const text = positionals.join(" ");
-      await waitGoneCommand(text, { ...options, timeout });
+      await waitCommand(ms);
       break;
     }
 
@@ -237,9 +234,11 @@ async function runCommand(args: ParsedArgs): Promise<void> {
       await enterCommand(options);
       break;
 
-    case "list":
-      await listCommand(options);
+    case "observe": {
+      const path = positionals[0];
+      await observeCommand({ ...options, visual, wait, path });
       break;
+    }
 
     case "packages": {
       const query = positionals[0];

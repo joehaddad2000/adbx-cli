@@ -236,18 +236,37 @@ export async function findElement(
     throw new ElementNotFoundError(query, getVisibleTexts(elements));
   }
 
-  if (matches.length > 1 && options.index === undefined) {
-    throw new MultipleElementsError(query, matches.length);
-  }
+  let element: UiElement;
 
-  const index = options.index ?? 0;
-  const element = matches[index];
+  if (options.index !== undefined) {
+    // Explicit index requested
+    const indexed = matches[options.index];
+    if (!indexed) {
+      throw new ElementNotFoundError(
+        `${query} at index ${options.index}`,
+        getVisibleTexts(elements)
+      );
+    }
+    element = indexed;
+  } else if (matches.length === 1) {
+    // Single match
+    element = matches[0]!;
+  } else {
+    // Multiple matches - prefer interactive elements (clickable + enabled)
+    const interactive = matches.filter((el) => el.clickable && el.enabled);
 
-  if (!element) {
-    throw new ElementNotFoundError(
-      `${query} at index ${index}`,
-      getVisibleTexts(elements)
-    );
+    if (interactive.length === 1) {
+      // Only one interactive element - use it
+      element = interactive[0]!;
+    } else if (interactive.length > 1) {
+      // Multiple interactive elements - require index
+      throw new MultipleElementsError(query, interactive.length);
+    } else {
+      // No interactive elements
+      throw new Error(
+        `Found ${matches.length} elements matching "${query}" but none are tappable (clickable + enabled).`
+      );
+    }
   }
 
   const center = boundsCenter(element.bounds);
@@ -255,20 +274,7 @@ export async function findElement(
 }
 
 /**
- * Check if an element with the given text exists.
- */
-export async function elementExists(
-  query: string,
-  options: AdbOptions = {}
-): Promise<boolean> {
-  const xml = await dumpUiHierarchy(options);
-  const elements = parseElements(xml);
-  const matches = findElementsByText(elements, query);
-  return matches.length > 0;
-}
-
-/**
- * Get all visible elements (for list command).
+ * Get all visible elements from the current screen.
  */
 export async function getAllElements(
   options: AdbOptions = {}

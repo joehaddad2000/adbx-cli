@@ -20,14 +20,15 @@ src/
 ├── input.ts          # Text input (ADBKeyboard detection + fallback)
 ├── commands/
 │   ├── devices.ts    # List connected devices
-│   ├── screenshot.ts # Capture screenshots
+│   ├── observe.ts    # Get screen state (elements + optional screenshot)
+│   ├── screenshot.ts # Screenshot capture utility (used by observe)
 │   ├── tap.ts        # Tap by text or coordinates
 │   ├── type.ts       # Type text, clear field
 │   ├── swipe.ts      # Scroll (up/down) and swipe (left/right)
-│   ├── wait.ts       # Wait for element to appear/disappear
+│   ├── wait.ts       # Simple delay/sleep utility
 │   ├── keys.ts       # Hardware keys (back, home, enter)
-│   ├── list.ts       # List visible UI elements
-│   └── app.ts        # Launch and stop apps
+│   ├── packages.ts   # Package discovery
+│   └── app.ts        # Launch, stop, and clear app data
 └── utils/
     └── output.ts     # Consistent success/error output formatting
 ```
@@ -75,16 +76,18 @@ Requires a running Android emulator or connected device:
 
 ```bash
 # Build first
-npm run build
+bun run build
 
 # Start emulator (if needed)
 emulator -avd Pixel_7 &
 
 # Test basic commands
 node dist/index.js devices
-node dist/index.js screenshot /tmp/test.png
-node dist/index.js list
+node dist/index.js observe
+node dist/index.js observe --visual /tmp/test.png
+node dist/index.js observe --wait 1000           # Wait 1s then observe
 node dist/index.js tap "Chrome"
+node dist/index.js wait 2000                      # Sleep for 2s
 node dist/index.js back
 node dist/index.js scroll down
 node dist/index.js swipe left

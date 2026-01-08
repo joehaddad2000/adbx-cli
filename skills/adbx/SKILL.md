@@ -1,6 +1,6 @@
 ---
 name: adbx
-description: Use adbx for Android device automation instead of raw adb commands. Invoke when interacting with Android devices or emulators - tapping UI elements, taking screenshots, typing text, navigating apps, or automating mobile workflows.
+description: Use adbx for Android device automation instead of raw adb commands. Invoke when interacting with Android devices or emulators - tapping UI elements, typing text, navigating apps, or automating mobile workflows.
 ---
 
 # adbx
@@ -15,11 +15,42 @@ npm install -g adbx
 
 ## Commands
 
-### Device & Screenshots
+### Observe Screen State
+```bash
+adbx observe                    # Get screen state (element list)
+adbx observe --visual           # Include screenshot
+adbx observe --visual ./s.png   # Screenshot at specific path
+adbx observe --wait 2000        # Wait 2s before observing
+adbx observe --wait 1500 --visual  # Wait, then observe with screenshot
+```
+
+Output example:
+```
+=== SCREEN STATE ===
+Elements: 5
+
+  "Sign In" at (540, 1200) [enabled]
+  "Email" at (540, 800) [enabled]
+  "Next month" at (819, 921) [icon, enabled]
+  "com.app:id/btn_submit" at (540, 1400) [id, enabled]
+  "Welcome" at (540, 400)
+
+Screenshot: /path/to/screenshot.png
+```
+
+**Always use `observe` to understand the current screen.**
+- Provides element positions for precise tapping
+- Add `--visual` when you need to see the actual screen (icons, layout, verify state)
+- Add `--wait` to let the screen settle after navigation
+
+Tags indicate how to tap each element:
+- No tag = has `text` attribute, tap with `adbx tap "Sign In"`
+- `[icon]` = has `content-desc`, tap with `adbx tap "Next month"`
+- `[id]` = only has `resource-id`, tap with `adbx tap "com.app:id/btn_submit" --id`
+
+### Devices
 ```bash
 adbx devices                    # List connected devices
-adbx screenshot                 # Save to ./screenshot.png
-adbx screenshot ./path/to.png   # Save to specific path
 ```
 
 ### Tapping
@@ -31,7 +62,7 @@ adbx tap "Item" --index 2       # Tap 3rd match (0-indexed)
 adbx tap "android:id/next" --id # Tap by resource-id
 ```
 
-Tap finds elements by matching their `text` or `content-desc` attribute (case-insensitive substring match). Use `--id` to search by `resource-id` instead.
+Tap finds elements by matching their `text` or `content-desc` attribute (case-insensitive exact match). Use `--id` to search by `resource-id` instead.
 
 ### Text Input
 ```bash
@@ -58,30 +89,11 @@ adbx home                       # Press home button
 
 ### Waiting
 ```bash
-adbx wait "Welcome"             # Wait for element to appear
-adbx wait-gone "Loading..."     # Wait for element to disappear
-adbx wait "Done" --timeout 30000  # Custom timeout (default: 10000ms)
+adbx wait 2000                  # Wait (sleep) for 2 seconds
+adbx wait 500                   # Wait 500ms
 ```
 
-### Discovery
-```bash
-adbx list                       # List all visible UI elements with coordinates
-```
-
-Output example:
-```
-Found 5 elements:
-  "Sign In" at (540, 1200) [clickable]
-  "Email" at (540, 800) [clickable]
-  "Next month" at (819, 921) [icon, clickable]
-  "com.app:id/btn_submit" at (540, 1400) [id, clickable]
-  "Welcome" at (540, 400)
-```
-
-Tags indicate how to tap each element:
-- No tag = has `text` attribute, tap with `adbx tap "Sign In"`
-- `[icon]` = has `content-desc`, tap with `adbx tap "Next month"`
-- `[id]` = only has `resource-id`, tap with `adbx tap "com.app:id/btn_submit" --id`
+Use `wait` for simple delays between actions. For waiting after navigation, prefer `observe --wait` to also see the screen state.
 
 ### Package Discovery
 ```bash
@@ -122,18 +134,20 @@ Android UI elements can be identified by different attributes:
 | "×" close icon | `adbx tap "Close"` | Has `content-desc="Close"` |
 | Unlabeled button | `adbx tap "btn_submit" --id` | Has `resource-id` only |
 
-**Tip:** Icons and images don't have text—they have accessibility labels (`content-desc`). Use `adbx list` to discover what's available. Elements marked `[icon]` in the output are `content-desc` values.
+**Tip:** Icons and images don't have text—they have accessibility labels (`content-desc`). Use `adbx observe` to discover what's available. Elements marked `[icon]` in the output are `content-desc` values.
 
 ## Options
 
 | Option | Description |
 |--------|-------------|
 | `--device <serial>` | Target specific device (required if multiple connected) |
-| `--timeout <ms>` | Timeout for wait commands (default: 10000) |
+| `--timeout <ms>` | Command timeout (default: 10000) |
 | `--long` | Long press (tap only) |
 | `--index <n>` | Select nth match when multiple found (tap only) |
 | `--id` | Search by resource-id instead of text/content-desc (tap only) |
-| `--all` | Include system packages (packages only) |
+| `--visual, -v` | Include screenshot (observe only) |
+| `--wait <ms>, -w` | Wait before observing (observe only) |
+| `--all, -a` | Include system packages (packages only) |
 
 ## Error Handling
 
@@ -146,7 +160,7 @@ Visible elements:
   "Sign In"
   "Create Account"
 ```
-Use `adbx list` to see available elements, or check if screen is in expected state.
+Use `adbx observe` to see available elements, or check if screen is in expected state.
 
 ### Multiple elements match
 ```
@@ -164,51 +178,45 @@ $ adbx tap "Submit"
 ```
 Add `--device emulator-5554` to commands.
 
-### Wait timeout
-```
-$ adbx wait "Dashboard"
-✗ Timeout waiting for "Dashboard" (10000ms)
-Visible elements: ["Loading...", "Please wait"]
-```
-Increase timeout or verify element text is correct.
-
 ## Typical Workflows
 
 ### Login Flow
 ```bash
+adbx observe                              # Check initial state
 adbx launch com.example.app
-adbx wait "Login"
+adbx observe --wait 2000                  # Wait for app to load, see elements
 adbx tap "Email"
 adbx type "user@example.com"
 adbx tap "Password"
 adbx type "secret123"
 adbx tap "Sign In"
-adbx wait "Dashboard"
-adbx screenshot ./logged-in.png
+adbx wait 3000                            # Wait for login
+adbx observe --visual ./logged-in.png     # Verify + capture
 ```
 
 ### Navigate and Interact
 ```bash
-adbx wait "Home"
+adbx observe                              # See current screen
 adbx scroll down
 adbx scroll down
 adbx tap "Settings"
-adbx wait "Settings"
+adbx observe --wait 1000                  # Wait for screen, see options
 adbx tap "Account"
 ```
 
 ### Handle Dialogs
 ```bash
 adbx tap "Delete"
-adbx wait "Are you sure?"
+adbx observe --wait 500                   # Wait for dialog, verify it appeared
 adbx tap "Confirm"
-adbx wait-gone "Are you sure?"
+adbx wait 500                             # Wait for dialog to dismiss
+adbx observe                              # Verify dialog is gone
 ```
 
 ### Debug Current State
 ```bash
-adbx screenshot ./current.png
-adbx list
+adbx observe                              # Quick element list
+adbx observe --visual                     # With screenshot for visual verification
 ```
 
 ### Multiple Devices
@@ -226,9 +234,9 @@ adbx launch com.goals.app       # Relaunch (will show onboarding)
 
 ## Best Practices
 
-1. **Always `wait` after navigation** - screens take time to load
-2. **Use `list` to discover elements** - don't guess element text
-3. **Use `packages` to find package names** - don't guess, search first (e.g., `adbx packages goal`)
-4. **Take screenshots for debugging** - see what's actually on screen
+1. **Use `observe` after every action** - understand what happened before continuing
+2. **Use `observe --wait` after navigation** - let the screen settle before reading elements
+3. **Use `packages` to find package names** - don't guess, search first
+4. **Add `--visual` when uncertain** - see the actual screen when debugging
 5. **Use `--index` for lists** - when multiple elements have similar text
-6. **Use `wait-gone` for loading states** - wait for spinners to disappear before interacting
+6. **Use simple `wait` sparingly** - prefer `observe --wait` to also see what's on screen

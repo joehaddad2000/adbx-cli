@@ -1,12 +1,11 @@
 /**
- * Capture a screenshot from the device.
+ * Screenshot capture utility.
  */
 
 import { writeFile } from "fs/promises";
 import { resolve } from "path";
 import sharp from "sharp";
 import { execAdbRaw, type AdbOptions } from "../adb.ts";
-import { success } from "../utils/output.ts";
 
 /** Max dimension (width or height) before resizing. Prevents Claude API errors. */
 const MAX_DIMENSION = 1568;
@@ -16,7 +15,11 @@ export interface ScreenshotOptions extends AdbOptions {
   path?: string;
 }
 
-export async function screenshotCommand(
+/**
+ * Capture screenshot and save to file.
+ * Returns the absolute path.
+ */
+export async function captureScreenshot(
   options: ScreenshotOptions = {}
 ): Promise<string> {
   const outputPath = resolve(options.path ?? "screenshot.png");
@@ -41,6 +44,5 @@ export async function screenshotCommand(
     await writeFile(outputPath, imageData);
   }
 
-  success(`Screenshot saved to ${outputPath}`);
   return outputPath;
 }

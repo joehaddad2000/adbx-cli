@@ -1,13 +1,18 @@
 /**
- * List visible UI elements.
+ * Observe the current screen state.
+ *
+ * Primary command for LLMs to understand what's on screen.
+ * Always returns UI element list; optionally captures screenshot.
  */
 
 import { getAllElements, boundsCenter, type UiElement } from "../ui.ts";
-import { info } from "../utils/output.ts";
+import { info, warn } from "../utils/output.ts";
 import type { AdbOptions } from "../adb.ts";
+import { captureScreenshot } from "./screenshot.ts";
+import { sleep } from "./wait.ts";
 
 // ============================================================================
-// Formatting
+// Element Formatting
 // ============================================================================
 
 /**
@@ -67,21 +72,62 @@ function filterDisplayableElements(elements: UiElement[]): UiElement[] {
 // Command
 // ============================================================================
 
-/**
- * List all visible UI elements.
- */
-export async function listCommand(options: AdbOptions = {}): Promise<void> {
+export interface ObserveOptions extends AdbOptions {
+  /** Include a screenshot capture */
+  visual?: boolean;
+  /** Custom path for screenshot (only used with --visual) */
+  path?: string;
+  /** Wait (ms) before observing */
+  wait?: number;
+}
+
+export interface ObserveResult {
+  elements: UiElement[];
+  screenshotPath?: string;
+}
+
+export async function observeCommand(
+  options: ObserveOptions = {}
+): Promise<ObserveResult> {
+  // Optional wait before observing
+  if (options.wait && options.wait > 0) {
+    await sleep(options.wait);
+  }
+
+  // Get UI elements
   const allElements = await getAllElements(options);
   const elements = filterDisplayableElements(allElements);
 
+  // Print header
+  info("=== SCREEN STATE ===");
+  info(`Elements: ${elements.length}`);
+  info("");
+
+  // Print elements
   if (elements.length === 0) {
-    info("No visible elements with text found.");
-    return;
+    info("No visible elements found.");
+  } else {
+    for (const el of elements) {
+      info(formatElement(el));
+    }
   }
 
-  info(`Found ${elements.length} elements:`);
-
-  for (const el of elements) {
-    info(formatElement(el));
+  // Handle optional screenshot
+  let screenshotPath: string | undefined;
+  if (options.visual) {
+    info("");
+    try {
+      screenshotPath = await captureScreenshot({
+        device: options.device,
+        timeout: options.timeout,
+        path: options.path,
+      });
+      info(`Screenshot: ${screenshotPath}`);
+    } catch (err) {
+      const message = err instanceof Error ? err.message : String(err);
+      warn(`Screenshot failed: ${message}`);
+    }
   }
+
+  return { elements, screenshotPath };
 }

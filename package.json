@@ -1,6 +1,6 @@
 {
   "name": "adbx",
-  "version": "0.2.6",
+  "version": "0.3.0",
   "description": "A semantic CLI wrapper around ADB designed for LLMs to interact with Android devices",
   "type": "module",
   "bin": {
@@ -35,11 +35,13 @@
   "devDependencies": {
     "@types/node": "^22",
     "@types/sharp": "^0.32.0",
+    "@types/update-notifier": "^6.0.8",
     "tsup": "^8.5.1",
     "typescript": "^5"
   },
   "dependencies": {
     "execa": "^9.6.1",
-    "sharp": "^0.34.5"
+    "sharp": "^0.34.5",
+    "update-notifier": "^7.3.1"
   }
 }

@@ -8,20 +8,33 @@ A semantic CLI wrapper around ADB designed for LLMs to interact with Android dev
 
 ## Why
 
-Standard ADB commands require coordinate calculations, XML parsing, and arcane syntax. This makes it difficult for LLMs to reliably automate Android devices.
+Standard ADB commands require coordinate calculations, XML parsing, and arcane syntax. adbx provides semantic commands that work with element text instead of coordinates.
 
-adbx provides semantic commands:
+### Before vs After
 
-```bash
-# Instead of calculating coordinates and parsing UI dumps...
-adb shell uiautomator dump /sdcard/ui.xml && adb pull /sdcard/ui.xml
-# ...then parsing XML to find bounds="[540,1200][620,1280]"
-# ...then calculating center point (580, 1240)
-adb shell input tap 580 1240
+| Task | Raw ADB | adbx |
+|------|---------|------|
+| Tap a button | `adb shell uiautomator dump ...` → parse XML → find bounds → calculate center → `adb shell input tap 580 1240` | `adbx tap "Submit"` |
+| See what's on screen | Dump XML, pull file, read manually | `adbx observe` |
+| Type text with spaces | Escape manually: `adb shell input text "hello%sworld"` | `adbx type "hello world"` |
+| Find why a tap failed | Re-dump XML, search through it | Error shows visible elements |
 
-# Just do this:
-adbx tap "Submit"
+### Key Benefits
+
+**Smart element selection** — When multiple elements match (e.g., a text label and its clickable parent), adbx automatically selects the interactive one. No manual XML inspection needed.
+
+**Actionable errors** — When an element isn't found, adbx shows what *is* on screen:
 ```
+✗ Element "Submit" not found
+
+Visible elements:
+  "Sign In"
+  "Create Account"
+```
+
+**Structured output** — `observe` returns a consistent format that's easy to parse and reason about, with coordinates ready for tapping.
+
+**Text input that works** — Handles spaces, special characters, and Unicode. Auto-detects ADBKeyboard for React Native apps.
 
 ## Installation
 
@@ -50,19 +63,46 @@ npx adbx <command>
 
 Add the adbx skill to Claude Code so it automatically uses adbx for Android automation:
 
-```
-/plugin marketplace add joehaddad2000/adbx-cli
-/plugin install adbx
+```bash
+# Install
+claude plugin marketplace add joehaddad2000/adbx-cli
+claude plugin install adbx
+
+# Update (when new versions are available)
+claude plugin update adbx
 ```
 
 ## Usage
+
+### Observe Screen State
+
+The primary command for understanding what's on screen:
+
+```bash
+adbx observe                    # Get element list
+adbx observe --visual           # Include screenshot
+adbx observe --visual ./s.png   # Screenshot at specific path
+adbx observe --wait 2000        # Wait 2s before observing
+```
+
+Output:
+```
+=== SCREEN STATE ===
+Elements: 5
+
+  "Sign In" at (540, 1200) [enabled]
+  "Email" at (540, 800) [enabled]
+  "Next month" at (819, 921) [icon, enabled]
+  "com.app:id/btn_submit" at (540, 1400) [id, enabled]
+  "Welcome" at (540, 400)
+
+Screenshot: /path/to/screenshot.png
+```
 
 ### Basic Commands
 
 ```bash
 adbx devices                    # List connected devices
-adbx screenshot                 # Save screenshot to ./screenshot.png
-adbx screenshot ./path/to.png   # Save to specific path
 
 adbx tap "Sign In"              # Tap element containing text
 adbx tap 540 1200               # Tap at coordinates
@@ -82,10 +122,8 @@ adbx swipe right                # Swipe right
 adbx back                       # Press back button
 adbx home                       # Press home button
 
-adbx wait "Welcome"             # Wait for element to appear
-adbx wait-gone "Loading..."     # Wait for element to disappear
+adbx wait 2000                  # Wait (sleep) for 2 seconds
 
-adbx list                       # List visible UI elements
 adbx packages                   # List user-installed apps
 adbx packages goal              # Search by name
 adbx packages --all             # Include system packages
@@ -98,25 +136,29 @@ adbx clear-data com.example.app # Clear app data
 
 ```bash
 --device <serial>    # Target specific device (required if multiple connected)
---timeout <ms>       # Override timeout for wait commands (default: 10000)
+--timeout <ms>       # Override command timeout (default: 10000)
 --long               # Long press (tap only)
 --index <n>          # Select nth match when multiple elements found (tap only)
 --id                 # Search by resource-id instead of text (tap only)
+--visual, -v         # Include screenshot (observe only)
+--wait <ms>, -w      # Wait before observing (observe only)
+--all, -a            # Include system packages (packages only)
 ```
 
 ### Example Workflow
 
 ```bash
 # Launch app and navigate
+adbx observe                          # Check initial state
 adbx launch com.example.myapp
-adbx wait "Login"
+adbx observe --wait 2000              # Wait for app to load, then observe
 adbx tap "Email"
 adbx type "user@example.com"
 adbx tap "Password"
 adbx type "secretpassword"
 adbx tap "Sign In"
-adbx wait "Dashboard"
-adbx screenshot ./logged-in.png
+adbx wait 3000                        # Wait for login to complete
+adbx observe --visual ./logged-in.png # Verify and capture
 ```
 
 ## How It Works
@@ -126,7 +168,7 @@ adbx screenshot ./logged-in.png
 When you run `adbx tap "Submit"`, the CLI:
 
 1. Dumps the UI hierarchy via `adb shell uiautomator dump`
-2. Parses the XML to find elements where `text` or `content-desc` contains "Submit"
+2. Parses the XML to find elements where `text` or `content-desc` matches "Submit"
 3. Extracts the element's bounds (e.g., `[100,200][300,250]`)
 4. Calculates the center point (200, 225)
 5. Executes `adb shell input tap 200 225`
@@ -153,19 +195,17 @@ If only one device is connected, it's selected automatically.
 | Command | Description |
 |---------|-------------|
 | `devices` | List connected devices and emulators |
-| `screenshot [path]` | Capture screenshot (default: ./screenshot.png) |
+| `observe [path]` | Get screen state (elements + optional screenshot) |
 | `tap <text>` | Tap element by text or content-desc |
 | `tap <x> <y>` | Tap at exact coordinates |
 | `type <text>` | Type text into focused input field |
 | `clear` | Clear text in focused input field |
 | `scroll up\|down` | Scroll vertically |
 | `swipe left\|right` | Swipe horizontally |
-| `wait <text>` | Wait for element to appear (with timeout) |
-| `wait-gone <text>` | Wait for element to disappear |
+| `wait <ms>` | Wait (sleep) for specified milliseconds |
 | `back` | Press back button |
 | `home` | Press home button |
 | `enter` | Press enter/return key |
-| `list` | List all visible UI elements with coordinates |
 | `packages [query]` | List/search installed packages |
 | `launch <package>` | Launch app by package name |
 | `stop <package>` | Force stop app |
